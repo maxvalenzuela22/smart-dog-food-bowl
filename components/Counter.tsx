@@ -14,10 +14,18 @@ export const Counter: React.FC<CounterDisplayProps> = ({
         return '🐕 Listo para medir comida';
       case 'waiting':
         return `⏱️ Preparando sensor... ${countdown}s`;
-      case 'counting':
-        return '⚖️ Midiendo comida...';
+      case 'counting_phase1':
+        return '';
+      case 'pause_phase1':
+        return '';
+      case 'counting_phase2':
+        return '';
+      case 'pause_phase2':
+        return '';
+      case 'counting_phase3':
+        return '';
       case 'completed':
-        return '✅ ¡Porción perfecta para tu perro!';
+        return '✅ ¡Porción completa lista para tu perro!';
       default:
         return '';
     }

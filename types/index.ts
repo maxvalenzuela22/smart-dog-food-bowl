@@ -1,4 +1,4 @@
-export type CounterState = 'idle' | 'waiting' | 'counting' | 'completed';
+export type CounterState = 'idle' | 'waiting' | 'counting_phase1' | 'pause_phase1' | 'counting_phase2' | 'pause_phase2' | 'counting_phase3' | 'completed';
 
 export interface CounterDisplayProps {
   currentWeight: number;

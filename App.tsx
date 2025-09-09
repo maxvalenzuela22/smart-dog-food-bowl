@@ -4,7 +4,7 @@ import { StyleSheet, View, Animated } from 'react-native';
 import { Header, Counter, ProgressBar, ActionButton, FamilyNotificationModal } from './components';
 import { CounterState } from './types';
 
-const MAX_WEIGHT = 250;
+const MAX_WEIGHT = 300;
 
 export default function App() {
   const [currentWeight, setCurrentWeight] = useState<number>(0);
@@ -34,41 +34,59 @@ export default function App() {
     ]).start();
   };
 
-  // Función para iniciar el conteo de peso
-  const startWeightCounting = useCallback(() => {
-    setState('counting');
+  // Función para iniciar el conteo de peso por tandas
+  const startBatchCounting = useCallback(() => {
     setCurrentWeight(0);
-    
-    // Incrementar peso cada 100ms para una animación suave (250g en ~25 segundos)
-    intervalRef.current = setInterval(() => {
-      setCurrentWeight((prev) => {
-        const nextWeight = prev + 1;
-        animateCounter();
-        
-        if (nextWeight >= MAX_WEIGHT) {
-          if (intervalRef.current) {
-            clearInterval(intervalRef.current);
+
+    // Función auxiliar para contar hasta un peso objetivo
+    const countToWeight = (startWeight: number, targetWeight: number, phase: number, hasPause = false) => {
+      setState(`counting_phase${phase}` as CounterState);
+
+      intervalRef.current = setInterval(() => {
+        setCurrentWeight((prev) => {
+          const nextWeight = prev + 1;
+          animateCounter();
+
+          if (nextWeight >= targetWeight) {
+            if (intervalRef.current) {
+              clearInterval(intervalRef.current);
+            }
+
+            if (hasPause && targetWeight < MAX_WEIGHT) {
+              // Pausa simulando que el usuario pone la siguiente porción
+              setState(`pause_phase${phase}` as CounterState);
+              setTimeout(() => {
+                countToWeight(targetWeight, targetWeight + 100, phase + 1, phase < 2);
+              }, 4000);
+            } else {
+              if (nextWeight >= MAX_WEIGHT) {
+                setState('completed');
+                // Mostrar modal después de un pequeño delay para que se vea la animación
+                setTimeout(() => {
+                  setShowModal(true);
+                }, 500);
+              }
+            }
+
+            return targetWeight;
           }
-          setState('completed');
-          // Mostrar modal después de un pequeño delay para que se vea la animación
-          setTimeout(() => {
-            setShowModal(true);
-          }, 500);
-          return MAX_WEIGHT;
-        }
-        
-        return nextWeight;
-      });
-    }, 100);
+
+          return nextWeight;
+        });
+      }, 20);
+    };
+
+    // Iniciar primera tanda: 0-100g, luego pausa de 2 segundos
+    countToWeight(0, 100, 1, true);
   }, []);
 
   // Función para iniciar el proceso completo
   const startCounting = useCallback(() => {
     setState((currentState) => {
       if (currentState !== 'idle') return currentState;
-      
+
       setCountdown(10);
-      
+
       // Cuenta regresiva de 10 segundos
       countdownRef.current = setInterval(() => {
         setCountdown((prev) => {
@@ -76,17 +94,17 @@ export default function App() {
             if (countdownRef.current) {
               clearInterval(countdownRef.current);
             }
-            // Iniciar el conteo de gramos
-            startWeightCounting();
+            // Iniciar el conteo de gramos por tandas
+            startBatchCounting();
             return 0;
           }
           return prev - 1;
         });
       }, 1000);
-      
+
       return 'waiting';
     });
-  }, [startWeightCounting]);
+  }, [startBatchCounting]);
 
   // Función para reiniciar todo
   const resetCounter = useCallback(() => {
